@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:security="http://www.springframework.org/schema/security"
+	
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/mvc
+		http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/tx 
+		http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/security
+ 		http://www.springframework.org/schema/security/spring-security.xsd" >
+
+	<!-- Add support for component scanning -->
+	<context:component-scan base-package="com.springproject" />
+
+	<!-- Add support for conversion, formatting and validation support -->
+	<mvc:annotation-driven/>
+
+	<!-- Define Spring MVC view resolver -->
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/view/" />
+		<property name="suffix" value=".jsp" />
+	</bean>
+
+
+	<!-- Spring hibernate integration -->
+	<!-- Define Database DataSource / connection pool -->
+	<bean id="myDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://mysql3000.mochahost.com:3306/seonbok_spring?useSSL=false" />
+		<property name="username" value="seonbok_spring" />
+		<property name="password" value="123450" />
+	</bean>
+	
+	<!-- Setup Hibernate session factory (Hibernate talk to database)-->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<!-- connect Hibernate with previous define Datasource -->
+		<property name="dataSource" ref="myDataSource" />		
+		<!-- Scan the package(s) and look for annotated @Entity class [For multiple packages Give a comma-delimited list]-->
+		<property name="packagesToScan" value="com.springproject.entity" />
+		<property name="hibernateProperties">
+		   <props>
+		      <prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+		      <!--<prop key="hibernate.show_sql">true</prop>-->
+		   </props>
+		</property>
+   </bean>	
+   
+   
+    <!-- Setup Hibernate transaction manager (sping will automatically begin and end a Transaction for Hibernate code)-->
+	<bean id="myTransactionManager"
+            class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory"/>
+    </bean>
+    
+    <!-- Enable configuration of transactional behavior based on annotations -->
+	<tx:annotation-driven transaction-manager="myTransactionManager" />
+
+	<!-- Add support for reading web resources: css, images, js, etc ... -->
+	<mvc:resources location="/WEB-INF/resources/" mapping="/resources/**"></mvc:resources>
+	
+	<!-- load external img -->
+	<mvc:resources location="file:C:/Users/sean/Desktop/img/" mapping="/img/**"/>
+	
+	<!-- file upload -->
+	 <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="maxUploadSize" value="1024000" />
+    </bean>
+    
+	<!-- security -->
+	<security:http auto-config='true'>
+	   <security:intercept-url pattern="/admin/**" access="hasRole('ROLE_ADMIN')" />
+	   <security:intercept-url pattern="/customer/**" access="hasRole('ROLE_USER')" />
+	   <security:form-login
+	       login-page="/login"   
+	       authentication-failure-url="/loginFail"
+	       username-parameter="username"
+	       password-parameter="password" />
+	      <security:csrf/>
+	   <security:logout logout-success-url="/logout" />
+	 </security:http>
+	 
+	 <security:authentication-manager>
+	   <security:authentication-provider>
+            <security:jdbc-user-service data-source-ref="myDataSource"
+                                        authorities-by-username-query="SELECT username, authority From Authorities WHERE username = ?"
+                                        users-by-username-query="SELECT username, password, enabled FROM User WHERE username = ?" />
+	    </security:authentication-provider>
+	 </security:authentication-manager> 
+	 
+	
+
+</beans>
+
+
+
+
+
+
+
+
+
+
+
